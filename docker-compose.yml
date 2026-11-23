@@ -5,7 +5,12 @@ services:
     environment:
       GOOGLE_SERVICE_ACCOUNT_FILE: /run/secrets/service_account.json
     volumes:
-      - ./service_account.json:/run/secrets/service_account.json:ro
+      - type: bind
+        source: ./service_account.json
+        target: /run/secrets/service_account.json
+        read_only: true
+        bind:
+          create_host_path: false
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     restart: unless-stopped
