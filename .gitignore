@@ -1,0 +1,6 @@
+.env
+lead-hunter.env
+Lead-Hunter-NoWebsite-Verified_*.json
+service_account.json
+.venv/
+__pycache__/

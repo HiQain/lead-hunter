@@ -1,0 +1,11 @@
+services:
+  lead-hunter:
+    build: .
+    env_file: .env
+    environment:
+      GOOGLE_SERVICE_ACCOUNT_FILE: /run/secrets/service_account.json
+    volumes:
+      - ./service_account.json:/run/secrets/service_account.json:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

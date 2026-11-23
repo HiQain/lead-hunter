@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Hunter</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f3f6; --border: #e2e5ea;
+    --text: #15181d; --muted: #5d6573; --accent: #2f5bea; --accent-text: #ffffff;
+    --ok: #16794a; --ok-bg: #e3f4ea; --warn: #8a5a00; --warn-bg: #fdf1d8;
+    --err: #b42318; --err-bg: #fde8e6; --info-bg: #e7edfd;
+    --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --surface: #171a21; --surface-2: #1e222b; --border: #2a2f3a;
+      --text: #e8eaef; --muted: #9aa3b2; --accent: #6b8cff; --accent-text: #0b0d12;
+      --ok: #5ccf8f; --ok-bg: #12301f; --warn: #f2c063; --warn-bg: #33270d;
+      --err: #ff8a80; --err-bg: #3a1513; --info-bg: #1b2440;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+  h1 small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 18px; }
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .stack { display: grid; gap: 16px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+  .field { margin-bottom: 12px; }
+  input, select { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text); font: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  button { font: inherit; font-weight: 600; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); width: 100%; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 500; }
+  .stat { display: flex; align-items: baseline; gap: 8px; }
+  .stat b { font-size: 28px; letter-spacing: -.02em; }
+  .stat span { color: var(--muted); font-size: 13px; }
+  a { color: var(--accent); }
+  .runs { list-style: none; margin: 0; padding: 0; }
+  .runs li button { width: 100%; text-align: left; border: 0; border-radius: 8px; padding: 8px 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 500; background: none; }
+  .runs li button:hover, .runs li button.active { background: var(--surface-2); }
+  .runs .meta { font-size: 12px; color: var(--muted); font-weight: 400; display: block; }
+  .pill { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .pill.done { background: var(--ok-bg); color: var(--ok); }
+  .pill.running, .pill.queued { background: var(--info-bg); color: var(--accent); }
+  .pill.failed { background: var(--err-bg); color: var(--err); }
+  .job-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .job-head h2 { margin: 0; font-size: 17px; }
+  .job-head .meta { color: var(--muted); font-size: 13px; }
+  .steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; }
+  .steps li { display: flex; gap: 10px; align-items: center; font-size: 14px; }
+  .steps .dot { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-size: 11px; background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+  .steps li.now .dot { background: var(--info-bg); }
+  .steps li.now .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+    animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .notice { padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 14px; }
+  .notice.err { background: var(--err-bg); color: var(--err); }
+  .notice.info { background: var(--info-bg); }
+  .notice.warn { background: var(--warn-bg); color: var(--warn); }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { background: var(--surface-2); font-weight: 600; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  .tag { font-size: 12px; padding: 1px 6px; border-radius: 4px; background: var(--surface-2); }
+  .tag.none { background: var(--warn-bg); color: var(--warn); }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .empty { color: var(--muted); text-align: center; padding: 32px 12px; }
+  #login { max-width: 380px; margin: 12vh auto 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section id="login" class="card" hidden>
+    <h1>Lead Hunter<small>Enter the access key to continue</small></h1>
+    <form id="login-form" style="margin-top:16px">
+      <div class="field">
+        <label for="token">Access key</label>
+        <input id="token" type="password" autocomplete="current-password" required>
+      </div>
+      <div id="login-error" class="notice err" hidden></div>
+      <button class="primary" type="submit">Sign in</button>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <header>
+      <h1>Lead Hunter<small>Find local businesses with no website or an outdated one</small></h1>
+      <button class="link" id="logout" type="button">Sign out</button>
+    </header>
+
+    <div class="grid">
+      <div class="stack">
+        <section class="card">
+          <h2>New search</h2>
+          <form id="search-form">
+            <div class="field">
+              <label for="niche">Business type</label>
+              <input id="niche" name="niche" maxlength="80" placeholder="e.g. roofing contractor" required>
+            </div>
+            <div class="field">
+              <label for="city">City</label>
+              <input id="city" name="city" maxlength="80" placeholder="e.g. Austin" required>
+            </div>
+            <div class="field">
+              <label for="state">State</label>
+              <select id="state" name="state" required></select>
+            </div>
+            <div id="form-error" class="notice err" hidden></div>
+            <button class="primary" id="submit" type="submit">Find leads</button>
+            <p class="hint">A search takes a few minutes. Searches run one at a time; new ones wait in line.</p>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Leads in the sheet</h2>
+          <div class="stat"><b id="count">–</b><span>unique leads</span></div>
+          <p class="hint" style="margin-bottom:0"><a id="sheet-link" href="#" target="_blank" rel="noopener" hidden>Open Google Sheet</a></p>
+        </section>
+
+        <section class="card">
+          <h2>Recent searches</h2>
+          <ul class="runs" id="runs"></ul>
+          <p class="hint" id="runs-empty">No searches yet.</p>
+        </section>
+      </div>
+
+      <section class="card" id="detail">
+        <div class="empty" id="detail-empty">Start a search, or pick one from Recent searches to see its leads.</div>
+        <div id="detail-body" hidden>
+          <div class="job-head">
+            <div>
+              <h2 id="job-title"></h2>
+              <div class="meta" id="job-meta"></div>
+            </div>
+            <span class="pill" id="job-status"></span>
+          </div>
+          <div id="job-error" class="notice err" hidden></div>
+          <ul class="steps" id="job-steps"></ul>
+          <div id="job-results"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+const STEP_ORDER = ["search_places","split_places","scrape_and_extract_email","validate_phones","ai_verify","dedupe_against_sheet","write_sheet"];
+const STEP_RUNNING = {
+  search_places: "Searching Google Maps…",
+  split_places: "Filtering businesses…",
+  scrape_and_extract_email: "Checking websites and finding emails…",
+  validate_phones: "Checking phone numbers…",
+  ai_verify: "Verifying businesses…",
+  dedupe_against_sheet: "Comparing with the sheet…",
+  write_sheet: "Saving to the Google Sheet…",
+};
+const COLUMNS = [
+  ["Business_Name","Business"], ["Phone","Phone"], ["Email","Email"], ["Website_Status","Website"],
+  ["Website_Issue","Issue"], ["Rating","Rating"], ["Reviews","Reviews"], ["Line_Type","Line"], ["Maps_URL","Map"],
+];
+
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} },
+};
+let token = store.get("lh_token");
+let selectedId = null;
+let pollTimer = null;
+
+function el(tag, attrs = {}, ...children) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const c of children.flat()) if (c != null) n.append(c instanceof Node ? c : String(c));
+  return n;
+}
+
+class Unauthorized extends Error {}
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", "X-Webhook-Token": token } });
+  if (r.status === 401) throw new Unauthorized();
+  if (!r.ok) {
+    let detail = "";
+    try { const d = (await r.json()).detail; detail = typeof d === "string" ? d : (d?.[0]?.msg || ""); } catch {}
+    throw new Error(detail || `Request failed (${r.status})`);
+  }
+  return r.json();
+}
+
+function showLogin(message) {
+  clearInterval(pollTimer);
+  $("#app").hidden = true; $("#login").hidden = false;
+  $("#login-error").hidden = !message; $("#login-error").textContent = message || "";
+  $("#token").focus();
+}
+
+async function showApp() {
+  $("#login").hidden = true; $("#app").hidden = false;
+  loadCount(); await loadRuns();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(tick, 3000);
+}
+
+async function handle(promise) {
+  try { return await promise; }
+  catch (e) { if (e instanceof Unauthorized) { store.set("lh_token", ""); showLogin("Your access key is no longer valid."); } throw e; }
+}
+
+async function loadCount() {
+  try {
+    const d = await handle(api("/api/count"));
+    $("#count").textContent = d.count.toLocaleString();
+    if (d.sheet_url && /^https:\/\/docs\.google\.com\//.test(d.sheet_url)) { $("#sheet-link").href = d.sheet_url; $("#sheet-link").hidden = false; }
+  } catch (e) { if (!(e instanceof Unauthorized)) $("#count").textContent = "?"; }
+}
+
+function placeLabel(j) { return `${j.city}, ${j.state}`; }
+function fmtTime(ts) { return ts ? new Date(ts * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""; }
+function fmtDuration(a, b) {
+  if (!a) return "";
+  const s = Math.max(0, Math.round((b || Date.now() / 1000) - a));
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+function statusText(j) {
+  return { queued: "Waiting", running: "Running", done: `${j.lead_count ?? j.leads?.length ?? 0} leads`, failed: "Failed" }[j.status];
+}
+
+let runsCache = [];
+async function loadRuns() {
+  runsCache = await handle(api("/api/runs"));
+  const list = $("#runs"); list.replaceChildren();
+  $("#runs-empty").hidden = runsCache.length > 0;
+  for (const j of runsCache.slice(0, 15)) {
+    list.append(el("li", {},
+      el("button", { type: "button", class: j.id === selectedId ? "active" : "", onclick: () => selectJob(j.id) },
+        el("span", {}, j.niche, el("span", { class: "meta" }, `${placeLabel(j)} · ${fmtTime(j.created)}`)),
+        el("span", { class: `pill ${j.status}` }, statusText(j)))));
+  }
+}
+
+async function selectJob(id) {
+  selectedId = id;
+  await loadRuns();
+  await loadJob();
+}
+
+async function loadJob() {
+  if (!selectedId) return;
+  let j;
+  try { j = await handle(api(`/api/runs/${encodeURIComponent(selectedId)}`)); }
+  catch (e) { if (!(e instanceof Unauthorized)) { selectedId = null; $("#detail-empty").hidden = false; $("#detail-body").hidden = true; } return; }
+  renderJob(j);
+}
+
+function renderJob(j) {
+  $("#detail-empty").hidden = true; $("#detail-body").hidden = false;
+  $("#job-title").textContent = `${j.niche} in ${placeLabel(j)}`;
+  const timing = j.status === "queued" ? "Waiting for the previous search to finish"
+    : `Started ${fmtTime(j.started)} · ${j.finished ? "took" : "running for"} ${fmtDuration(j.started, j.finished)}`;
+  $("#job-meta").textContent = timing;
+  const pill = $("#job-status"); pill.className = `pill ${j.status}`; pill.textContent = statusText(j);
+  $("#job-error").hidden = !j.error; $("#job-error").textContent = j.error ? `Something went wrong: ${j.error}` : "";
+
+  const steps = $("#job-steps"); steps.replaceChildren();
+  for (const s of j.steps) steps.append(el("li", {}, el("span", { class: "dot" }, "✓"), s.message));
+  if (j.status === "running") {
+    const done = new Set(j.steps.map((s) => s.node));
+    const next = STEP_ORDER.find((n) => !done.has(n));
+    if (next) steps.append(el("li", { class: "now" }, el("span", { class: "dot" }), STEP_RUNNING[next]));
+  }
+
+  const results = $("#job-results"); results.replaceChildren();
+  if (j.status === "done") results.append(j.leads.length ? resultsTable(j) : el("div", { class: "notice warn" },
+    "No new leads this time. Every business found was filtered out or is already in the sheet. Try another city or business type."));
+  else if (j.status === "running" || j.status === "queued") results.append(el("div", { class: "notice info" },
+    "You can leave this page open or come back later. Results appear here when the search finishes."));
+}
+
+function safeUrl(u, pattern) { return typeof u === "string" && pattern.test(u) ? u : ""; }
+
+function resultsTable(j) {
+  const head = el("tr", {}, COLUMNS.map(([, label]) => el("th", {}, label)));
+  const rows = j.leads.map((l) => el("tr", {}, COLUMNS.map(([key]) => {
+    const v = l[key] ?? "";
+    if (key === "Maps_URL") { const u = safeUrl(v, /^https:\/\/www\.google\.com\/maps/); return el("td", {}, u ? el("a", { href: u, target: "_blank", rel: "noopener" }, "Open") : ""); }
+    if (key === "Email") return el("td", {}, v ? el("a", { href: `mailto:${v}` }, v) : "");
+    if (key === "Phone") return el("td", {}, v ? el("a", { href: `tel:${String(v).replace(/[^0-9+]/g, "")}` }, v) : "");
+    if (key === "Website_Status") {
+      if (v === "none") return el("td", {}, el("span", { class: "tag none" }, "No website"));
+      const u = safeUrl(l.Website, /^https?:\/\//i);
+      return el("td", {}, u ? el("a", { href: u, target: "_blank", rel: "noopener nofollow" }, "Outdated site") : "Outdated site");
+    }
+    if (key === "Website_Issue") return el("td", {}, v && v !== "no_website" ? el("span", { class: "tag" }, String(v).replaceAll("_", " ").replaceAll("|", ", ")) : "");
+    return el("td", {}, v);
+  })));
+  return el("div", {},
+    el("div", { class: "toolbar" },
+      el("strong", {}, `${j.leads.length} new lead${j.leads.length === 1 ? "" : "s"} saved to the sheet`),
+      el("button", { type: "button", onclick: () => downloadCsv(j) }, "Download CSV")),
+    el("div", { class: "table-wrap" }, el("table", {}, el("thead", {}, head), el("tbody", {}, rows))));
+}
+
+function csvCell(v) {
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+}
+function downloadCsv(j) {
+  const keys = [...new Set(j.leads.flatMap((l) => Object.keys(l)))];
+  const csv = [keys, ...j.leads.map((l) => keys.map((k) => l[k]))].map((r) => r.map(csvCell).join(",")).join("\r\n");
+  const a = el("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })),
+    download: `leads-${j.niche}-${j.city}-${j.state}.csv`.replace(/[^a-z0-9.\-]+/gi, "-").toLowerCase() });
+  document.body.append(a); a.click(); a.remove();
+}
+
+async function tick() {
+  const active = runsCache.some((j) => j.status === "queued" || j.status === "running");
+  if (!active) return;
+  const before = new Map(runsCache.map((j) => [j.id, j.status]));
+  try {
+    await loadRuns();
+    if (selectedId) await loadJob();
+    if (runsCache.some((j) => j.status === "done" && before.get(j.id) !== "done")) loadCount();
+  } catch {}
+}
+
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  token = $("#token").value.trim();
+  try { await api("/api/check"); store.set("lh_token", token); $("#token").value = ""; showApp(); }
+  catch (err) { showLogin(err instanceof Unauthorized ? "That access key is not right." : "Could not reach the server. Try again."); }
+});
+
+$("#logout").addEventListener("click", () => { token = ""; store.set("lh_token", ""); selectedId = null; showLogin(); });
+
+$("#search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#submit"); btn.disabled = true; $("#form-error").hidden = true;
+  const body = { niche: $("#niche").value.trim(), city: $("#city").value.trim(), state: $("#state").value };
+  store.set("lh_state", body.state);
+  try {
+    const j = await handle(api("/api/runs", { method: "POST", body: JSON.stringify(body) }));
+    await selectJob(j.id);
+  } catch (err) {
+    if (!(err instanceof Unauthorized)) { $("#form-error").textContent = err.message; $("#form-error").hidden = false; }
+  } finally { btn.disabled = false; }
+});
+
+const stateSelect = $("#state");
+stateSelect.append(el("option", { value: "" }, "Choose a state"), ...STATES.map((s) => el("option", { value: s }, s)));
+stateSelect.value = store.get("lh_state");
+
+(async () => {
+  try { await api("/api/check"); showApp(); }
+  catch (e) { showLogin(e instanceof Unauthorized && token ? "Please sign in again." : ""); }
+})();
+</script>
+</body>
+</html>
