@@ -1,1 +1,7 @@
-Require all denied
+
+<FilesMatch \.php$>
+	SetHandler proxy:fcgi://hiqain-php83
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(.*)$ http://127.0.0.1:8010/$1 [P,L]
